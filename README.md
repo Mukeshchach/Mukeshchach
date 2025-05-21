@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seehmmara Numberlogy Calculator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: linear-gradient(to bottom right, #eef2ff, #faf5ff); min-height: 100vh; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .card-header { background: linear-gradient(to right, #4f46e5, #9333ea); color: white; padding: 1.5rem; border-radius: 0.75rem 0.75rem 0 0; position: relative; }
+        .card-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .card-description { color: #c7d2fe; font-size: 0.875rem; }
+        .logo-img {
+            display: block;
+            margin: 0 auto 1rem auto;
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            background: white;
+            border-radius: 50%;
+            border: 4px solid #4f46e5;
+        }
+        .card-content { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        .input-group { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+        input { flex: 1; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; }
+        button { background: linear-gradient(to right, #4f46e5, #9333ea); color: white; padding: 0 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500; }
+        .results-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .result-box { padding: 1rem; border-radius: 0.5rem; border: 1px solid; }
+        .prediction-table { border: 1px solid #e5e7eb; border-radius: 0.75rem; overflow: hidden; }
+        .table-header { display: grid; grid-template-columns: 1fr 1fr 3fr; background: #f5f3ff; padding: 1rem; font-weight: 600; color: #4f46e5; }
+        .prediction-row { display: grid; grid-template-columns: 1fr 1fr 3fr; padding: 1rem; background: white; border-bottom: 1px solid #f3f4f6; }
+        .digit-badge { display: inline-flex; width: 2.5rem; height: 2.5rem; background: linear-gradient(to bottom right, #e0e7ff, #f3e8ff); border: 1px solid #c4b5fd; border-radius: 999px; align-items: center; justify-content: center; font-weight: 700; color: #4f46e5; }
+        .error { color: #dc2626; font-size: 0.875rem; margin-top: 0.5rem; }
+        .lang-select { margin-bottom: 1rem; float: right; }
+
+        /* BIG COLORFUL NUMBERS */
+        .big-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+            padding: 0.5rem 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 12px 0 rgba(80, 80, 200, 0.10);
+            transition: background 0.4s;
+        }
+        .total-color {
+            background: linear-gradient(90deg, #34d399, #60a5fa);
+            color: #fff;
+        }
+        .root-color {
+            background: linear-gradient(90deg, #f59e42, #f43f5e);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <select id="langSelect" class="lang-select" onchange="changeLanguage()">
+                    <option value="hi">हिंदी</option>
+                    <option value="en">English</option>
+                </select>
+                <!-- LOGO IMAGE -->
+                <img src="https://pplx-res.cloudinary.com/image/upload/v1747823090/user_uploads/56630185/10a33d33-7380-4391-be23-0fb0374497b5/channels4_profile.jpg" alt="Seehmmara Numerology Logo" class="logo-img">
+                <h1 class="card-title" id="mainTitle">Seehmmara Numberlogy Calculator</h1>
+                <p class="card-description" id="mainDesc">Discover hidden meanings in your mobile number (zeros ignored)</p>
+            </div>
+            <div class="card-content">
+                <div class="input-group">
+                    <input type="tel" id="mobileInput" placeholder="e.g. 7069815884" maxlength="15">
+                    <button onclick="analyzeNumber()" id="analyzeBtn">Analyze</button>
+                </div>
+                <div id="errorMessage" class="error"></div>
+                <div id="resultsSection" style="display: none;">
+                    <div class="results-grid">
+                        <div class="result-box" style="background: #eef2ff; border-color: #c7d2fe;">
+                            <h3>Total</h3>
+                            <p id="totalNumber" class="big-number total-color">0</p>
+                        </div>
+                        <div class="result-box" style="background: #f5f3ff; border-color: #ddd6fe;">
+                            <h3>Root Number</h3>
+                            <p id="rootNumber" class="big-number root-color">0</p>
+                        </div>
+                    </div>
+                    <div class="prediction-table">
+                        <div class="table-header">
+                            <div>Position</div>
+                            <div>Digits</div>
+                            <div>Prediction</div>
+                        </div>
+                        <div id="predictionsList" class="predictions-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    const PREDICTIONS = {
+      hi: {
+        "11": "अहंकार, तेज़ और धारदार बात करने की शैली।",
+        "12": "आकर्षक चेहरा, पैसा बचाने वाले, जीवनसाथी मददगार होता है।",
+        "13": "अच्छे सलाहकार, अच्छी शिक्षा, सम्मानित, लोकप्रिय, अपने सर्कल में खास; 3 और 1 की जोड़ी व्यक्ति को प्रोफेशनल बनाती है।",
+        "14": "कर्ज का बोझ, लीगल नोटिस, स्वास्थ्य समस्याएं।",
+        "15": "पिता की प्रसिद्धि, ऐसे लोग अक्सर अपने पिता को प्रसिद्ध बना देते हैं।",
+        "16": "जीवनसाथी की सेहत संबंधी समस्या, शादीशुदा जीवन में परेशानी, इस नंबर के समय में आमदनी कम रहती है।",
+        "17": "पैसों से जुड़ा काम कभी रुकता नहीं, नजदीकी कोई सरकारी नौकरी में होता है, MNC जॉब के अवसर, दो शादियों की संभावना, झूठ बोलकर मुनाफा।",
+        "18": "जीवनसाथी की सेहत खराब, सरकारी मामलों से परेशानी, बार-बार नौकरी बदलना, पिता-पुत्र में अनबन।",
+        "19": "जो चाहते हैं वो हासिल करते हैं, ऊंचे पद पर रहते हैं, प्रोफेशनल स्वभाव।",
+        "21": "पैसा बर्बाद करने की प्रवृत्ति, आमतौर पर ऐसे लोगों का चेहरा आकर्षक होता है।",
+        "22": "मूड स्विंग्स, भावुक, चिंता, BP की समस्या, खासकर अगर नाम B, K या R से शुरू होता है।",
+        "23": "दुश्मन बहुत होते हैं लेकिन कोई नुकसान नहीं पहुंचा पाता।",
+        "24": "लक्ष्य पाने के लिए धैर्य चाहिए, दिमाग हमेशा प्लानिंग में रहता है, निगेटिव सोच की संभावना।",
+        "25": "‘हाथ में सफा’, तंत्र/मेडिकल फील्ड में कार्य संभव, बेल दिलाने वाला, एयर ट्रैवल से सफलता, फाइनेंस से दूर रहें।",
+        "26": "शिक्षा में रुकावट, लड़कियों को सास से समस्या, कम शुक्राणु या डायबिटीज़ की संभावना।",
+        "27": "जोड़ो का दर्द, मूत्र रोग।",
+        "28": "अच्छा पैसा आता है, लेकिन अस्पताल/दवाइयों में खर्च होता है, परिवार में दो शादियां, गलत संगति से बचें।",
+        "29": "पैसा ठीक-ठाक रहता है, दूसरों के पैसों से ऐश करता है, अहंकारी हो सकता है।",
+        "31": "अच्छे सलाहकार, अच्छी शिक्षा, सम्मानित, लोकप्रिय, अपने सर्कल में खास; 3 और 1 की जोड़ी व्यक्ति को प्रोफेशनल बनाती है।",
+        "32": "दुश्मन बहुत होते हैं लेकिन कोई नुकसान नहीं पहुंचा पाता।",
+        "33": "ज्ञान पाने की इच्छा, लेने-देन की प्रवृत्ति, ज़मीन से जुड़ाव कम।",
+        "34": "पैरों में कांपना, परिवार में लकवे की समस्या, सांस की दिक्कत।",
+        "35": "घर से दूर सफलता, पिता से डर से तरक्की, अच्छी आमदनी, लिक्विड मनी की समस्या।",
+        "36": "सिद्धांतों पर चलने वाला, शिक्षा में रुकावट, अच्छा ज्ञान लेकिन प्रस्तुति में कमी।",
+        "37": "सम्पूर्ण व्यक्तित्व, ज्ञान से लाभ।",
+        "38": "रियल एस्टेट, काउंसलर, सुलह कराने वाले।",
+        "39": "दिखावे की प्रवृत्ति, दोहरी शख्सियत।",
+        "41": "कर्ज का बोझ, लीगल नोटिस, स्वास्थ्य समस्याएं।",
+        "42": "लक्ष्य पाने के लिए धैर्य चाहिए, दिमाग हमेशा प्लानिंग में रहता है, निगेटिव सोच की संभावना।",
+        "43": "पैरों में कांपना, परिवार में लकवे की समस्या, सांस की दिक्कत।",
+        "44": "काम में देरी, जीवन में संघर्ष।",
+        "45": "बार-बार कोर्ट/हॉस्पिटल जाना, बंधनों में जीवन।",
+        "46": "विवाहेतर संबंध, पेशाब की समस्या, अंतरजातीय विवाह।",
+        "47": "ईमानदार और होशियार।",
+        "48": "लाइलाज समस्याएं, यौन सुख की कमी, खून से जुड़ी बीमारी।",
+        "49": "जोखिम भरा या यूनिफॉर्म वाला काम, अपराधी प्रवृत्ति।",
+        "51": "पिता की प्रसिद्धि, ऐसे लोग अक्सर अपने पिता को प्रसिद्ध बना देते हैं।",
+        "52": "‘हाथ में सफा’, तंत्र/मेडिकल फील्ड में कार्य संभव, बेल दिलाने वाला, एयर ट्रैवल से सफलता, फाइनेंस से दूर रहें।",
+        "53": "घर से दूर सफलता, पिता से डर से तरक्की, अच्छी आमदनी, लिक्विड मनी की समस्या।",
+        "54": "बार-बार कोर्ट/हॉस्पिटल जाना, बंधनों में जीवन।",
+        "56": "खुद के पैसे मांगने में झिझक, मंदिर/बड़ा स्टोर जैसे लैंडमार्क के पास निवास, व्यापारिक सोच।",
+        "57": "वक्ता, लेखक, अच्छे जनसंपर्क, सलाह के लिए खोजे जाते हैं।",
+        "58": "पैसा फंसा रहता है, कैलकुलेटेड दिमाग, फाइनेंस या बड़े पैसों से जुड़ा काम।",
+        "59": "बोलचाल से रिश्तों में दूरी, विज्ञान/कॉमर्स क्षेत्र में रुझान।",
+        "61": "जीवनसाथी की सेहत संबंधी समस्या, शादीशुदा जीवन में परेशानी, इस नंबर के समय में आमदनी कम रहती है।",
+        "62": "शिक्षा में रुकावट, लड़कियों को सास से समस्या, कम शुक्राणु या डायबिटीज़ की संभावना।",
+        "63": "सिद्धांतों पर चलने वाला, शिक्षा में रुकावट, अच्छा ज्ञान लेकिन प्रस्तुति में कमी।",
+        "64": "विवाहेतर संबंध, पेशाब की समस्या, अंतरजातीय विवाह।",
+        "65": "खुद के पैसे मांगने में झिझक, मंदिर/बड़ा स्टोर जैसे लैंडमार्क के पास निवास, व्यापारिक सोच।",
+        "66": "ऐशोआराम पसंद, घूमने के शौकीन।",
+        "67": "प्रेम विवाह की संभावना, जीवनसाथी की सेहत में परेशानी, वैवाहिक जीवन में तनाव।",
+        "68": "आंख या शरीर के अंगों में परेशानी।",
+        "69": "अच्छा मैनेजमेंट और प्लानिंग, विपरीत लिंग से जुड़ाव।",
+        "71": "पैसों से जुड़ा काम कभी रुकता नहीं, नजदीकी कोई सरकारी नौकरी में होता है, MNC जॉब के अवसर, दो शादियों की संभावना, झूठ बोलकर मुनाफा।",
+        "72": "जोड़ो का दर्द, मूत्र रोग।",
+        "73": "सम्पूर्ण व्यक्तित्व, ज्ञान से लाभ।",
+        "74": "ईमानदार और होशियार।",
+        "75": "वक्ता, लेखक, अच्छे जनसंपर्क, सलाह के लिए खोजे जाते हैं।",
+        "76": "प्रेम विवाह की संभावना, जीवनसाथी की सेहत में परेशानी, वैवाहिक जीवन में तनाव।",
+        "77": "मूड स्विंग्स, आंतरिक रोग, आध्यात्मिक सोच, रिश्तों और परिवार में समस्याएं।",
+        "78": "हीलर, दुखी या आदर्शवादी, निजी शक्ति से समस्याएं सुलझाते हैं।",
+        "79": "पिता से अलग होने के बाद सफलता मिलती है।",
+        "81": "जीवनसाथी की सेहत खराब, सरकारी मामलों से परेशानी, बार-बार नौकरी बदलना, पिता-पुत्र में अनबन।",
+        "82": "अच्छा पैसा आता है, लेकिन अस्पताल/दवाइयों में खर्च होता है, परिवार में दो शादियां, गलत संगति से बचें।",
+        "83": "रियल एस्टेट, काउंसलर, सुलह कराने वाले।",
+        "84": "लाइलाज समस्याएं, यौन सुख की कमी, खून से जुड़ी बीमारी।",
+        "85": "पैसा फंसा रहता है, कैलकुलेटेड दिमाग, फाइनेंस या बड़े पैसों से जुड़ा काम।",
+        "86": "आंख या शरीर के अंगों में परेशानी।",
+        "87": "हीलर, दुखी या आदर्शवादी, निजी शक्ति से समस्याएं सुलझाते हैं।",
+        "88": "काम में देरी और रुकावट, जीवन मेहनत से भरा होता है।",
+        "89": "झगड़ालू स्वभाव, सिद्धांतों पर अडिग, भविष्य में पुरानी बीमारी हो सकती है।",
+        "91": "जो चाहते हैं वो हासिल करते हैं, ऊंचे पद पर रहते हैं, प्रोफेशनल स्वभाव।",
+        "92": "पैसा ठीक-ठाक रहता है, दूसरों के पैसों से ऐश करता है, अहंकारी हो सकता है।",
+        "93": "दिखावे की प्रवृत्ति, दोहरी शख्सियत।",
+        "94": "जोखिम भरा या यूनिफॉर्म वाला काम, अपराधी प्रवृत्ति।",
+        "95": "बोलचाल से रिश्तों में दूरी, विज्ञान/कॉमर्स क्षेत्र में रुझान।",
+        "96": "अच्छा मैनेजमेंट और प्लानिंग, विपरीत लिंग से जुड़ाव।",
+        "97": "पिता से अलग होने के बाद सफलता मिलती है।",
+        "98": "झगड़ालू स्वभाव, सिद्धांतों पर अडिग, भविष्य में पुरानी बीमारी हो सकती है।",
+        "99": "अधिक कर्ज, गुस्सा, खून या त्वचा से जुड़ी समस्याएं।"
+      },
+      en: {
+        "11": "Ego, attitude, sharp and fast communication.",
+        "12": "Generally these people have attractive face, saving people, helpful life partner.",
+        "13": "Good advisor, good education, respectful, popular, special in their circle; 3 and 1 combo makes a person professional.",
+        "14": "Loan liability, legal notice, health issue.",
+        "15": "Father popularity, generally these people make their father famous.",
+        "16": "Spouse health issues, marriage life issues, less income at the time of having this mobile number.",
+        "17": "Money related work never stops, someone in the close circle works in a government job, possible MNC job with good facilities, chance of 2 marriages, more profit from lying.",
+        "18": "Spouse health issue, issues related to government, frequent job changes, father-son understanding issues.",
+        "19": "You own what you want, always on a high place, professional person.",
+        "21": "Waste money, generally these people have attractive face.",
+        "22": "Mood swings, emotional, anxiety, BP issues, especially emotional if name starts with B, K, or R.",
+        "23": "Generally many enemies but none can harm the native.",
+        "24": "Patience is needed to achieve goals, always planning, brain always working, may have negative thoughts.",
+        "25": "‘Hath me saffa’, can work in occult science/medical field, gives bail, success through air travel, avoid finance-related matters.",
+        "26": "Break in education, for girls – mother-in-law problems, may have low sperm count or diabetes.",
+        "27": "Joint pain, urinary disease.",
+        "28": "Decent money, spend on medicines/hospitals, 2 marriages in family, avoid bad company.",
+        "29": "Decent money, lives happily on someone else’s money, may become egoistic.",
+        "31": "Good advisor, good education, respectful, popular, special in their circle; 3 and 1 combo makes a person professional.",
+        "32": "Generally many enemies but none can harm the native.",
+        "33": "Knowledge hungry, give and take nature, less grounded.",
+        "34": "Legs shivering, family paralysis issues, breathing problems.",
+        "35": "Success away from home, fear of father leads to success, good income, issues with liquid money.",
+        "36": "Principle-oriented, education barriers, good knowledge but struggles with presentation.",
+        "37": "Complete personality, benefits from knowledge.",
+        "38": "Real estate, counselor, peacemaker/mediator.",
+        "39": "Show-off tendencies, dual personality.",
+        "41": "Loan liability, legal notice, health issue.",
+        "42": "Patience is needed to achieve goals, always planning, brain always working, may have negative thoughts.",
+        "43": "Legs shivering, family paralysis issues, breathing problems.",
+        "44": "Delays in work, life struggles.",
+        "45": "Frequent court/hospital visits, lives with restrictions.",
+        "46": "Extra-marital affairs, urine infections, inter-caste marriages.",
+        "47": "Honest and brilliant.",
+        "48": "Incurable problems, lack of sexual pleasure, blood disease.",
+        "49": "Risky or uniform work, criminal tendencies.",
+        "51": "Father popularity, generally these people make their father famous.",
+        "52": "‘Hath me saffa’, can work in occult science/medical field, gives bail, success through air travel, avoid finance-related matters.",
+        "53": "Success away from home, fear of father leads to success, good income, issues with liquid money.",
+        "54": "Frequent court/hospital visits, lives with restrictions.",
+        "56": "Hesitate to ask for own money, lives near big landmarks (temple/superstore), business-minded.",
+        "57": "Speakers, writers, good public relations, sought after for advice.",
+        "58": "Money stuck, calculated mind, involved in finance or big money talks.",
+        "59": "Relationship damage due to speech, leans towards science/commerce field.",
+        "61": "Spouse health issues, marriage life issues, less income at the time of having this mobile number.",
+        "62": "Break in education, for girls – mother-in-law problems, may have low sperm count or diabetes.",
+        "63": "Principle-oriented, education barriers, good knowledge but struggles with presentation.",
+        "64": "Extra-marital affairs, urine infections, inter-caste marriages.",
+        "65": "Hesitate to ask for own money, lives near big landmarks (temple/superstore), business-minded.",
+        "66": "Luxury lovers, fond of travel.",
+        "67": "Possible love marriage, spouse health issues, disturbed marital life.",
+        "68": "Eye or body organ issues.",
+        "69": "Good management and planning, involvement with opposite sex.",
+        "71": "Money related work never stops, someone in the close circle works in a government job, possible MNC job with good facilities, chance of 2 marriages, more profit from lying.",
+        "72": "Joint pain, urinary disease.",
+        "73": "Complete personality, benefits from knowledge.",
+        "74": "Honest and brilliant.",
+        "75": "Speakers, writers, good public relations, sought after for advice.",
+        "76": "Possible love marriage, spouse health issues, disturbed marital life.",
+        "77": "Mood swings, internal diseases, spiritual overthinking, relationship and family life issues.",
+        "78": "Healer, sad or idealistic, solves problems with personal power.",
+        "79": "Success after separation from father.",
+        "81": "Spouse health issue, issues related to government, frequent job changes, father-son understanding issues.",
+        "82": "Decent money, spend on medicines/hospitals, 2 marriages in family, avoid bad company.",
+        "83": "Real estate, counselor, peacemaker/mediator.",
+        "84": "Incurable problems, lack of sexual pleasure, blood disease.",
+        "85": "Money stuck, calculated mind, involved in finance or big money talks.",
+        "86": "Eye or body organ issues.",
+        "87": "Healer, sad or idealistic, solves problems with personal power.",
+        "88": "Delay and obstacles in work, life filled with hard work.",
+        "89": "Argumentative, principle-driven, possible chronic issues later in life.",
+        "91": "You own what you want, always on a high place, professional person.",
+        "92": "Decent money, lives happily on someone else’s money, may become egoistic.",
+        "93": "Show-off tendencies, dual personality.",
+        "94": "Risky or uniform work, criminal tendencies.",
+        "95": "Relationship damage due to speech, leans towards science/commerce field.",
+        "96": "Good management and planning, involvement with opposite sex.",
+        "97": "Success after separation from father.",
+        "98": "Argumentative, principle-driven, possible chronic issues later in life.",
+        "99": "High loan burden, anger issues, blood or skin-related issues."
+      }
+    };
+
+    let currentLang = 'hi';
+
+    function changeLanguage() {
+        currentLang = document.getElementById('langSelect').value;
+        document.getElementById('analyzeBtn').textContent = currentLang === 'hi' ? 'विश्लेषण करें' : 'Analyze';
+        document.getElementById('mainTitle').textContent = currentLang === 'hi' ? 'सीहमारा नंबरलॉजी कैलकुलेटर' : 'Seehmmara Numberlogy Calculator';
+        document.getElementById('mainDesc').textContent = currentLang === 'hi'
+            ? 'अपने मोबाइल नंबर (शून्य को छोड़कर) में छिपे अर्थ जानें'
+            : 'Discover hidden meanings in your mobile number (zeros ignored)';
+        if (document.getElementById('resultsSection').style.display === 'block') {
+            analyzeNumber();
+        }
+    }
+
+    function analyzeNumber() {
+        const mobileNumber = document.getElementById('mobileInput').value;
+        const sanitized = mobileNumber.replace(/0/g, '');
+
+        // ENFORCE 7 to 15 DIGITS (excluding zeros)
+        if (sanitized.length < 7 || sanitized.length > 15) {
+            showError(
+                currentLang === 'hi'
+                ? 'कृपया 7 से 15 नॉन-ज़ीरो अंकों वाला मोबाइल नंबर डालें'
+                : 'Please enter a valid mobile number with 7 to 15 non-zero digits'
+            );
+            document.getElementById('resultsSection').style.display = 'none';
+            return;
+        }
+
+        clearError();
+        processNumber(mobileNumber, sanitized);
+    }
+
+    function processNumber(original, sanitized) {
+        const combinations = [];
+        for (let i = 0; i < sanitized.length - 1; i++) {
+            const digits = sanitized.substring(i, i + 2);
+            const positions = getOriginalPositions(original, sanitized, i);
+            combinations.push({
+                digits,
+                position: `Digits ${positions.start}-${positions.end}`,
+                prediction: (typeof PREDICTIONS[currentLang][digits] !== "undefined")
+                    ? PREDICTIONS[currentLang][digits]
+                    : (currentLang === 'hi' ? 'कोई विशेष भविष्यवाणी उपलब्ध नहीं' : 'No specific prediction available')
+            });
+        }
+
+        const total = sanitized.split('').reduce((sum, d) => sum + parseInt(d), 0);
+        const root = reduceToSingleDigit(total);
+
+        displayResults({
+            sanitized,
+            combinations,
+            total,
+            root
+        });
+    }
+
+    function displayResults(results) {
+        document.getElementById('resultsSection').style.display = 'block';
+        document.getElementById('totalNumber').textContent = results.total;
+        document.getElementById('rootNumber').textContent = results.root;
+
+        const predictionsList = document.getElementById('predictionsList');
+        predictionsList.innerHTML = results.combinations.map(combo => `
+            <div class="prediction-row">
+                <div>${combo.position}</div>
+                <div><span class="digit-badge">${combo.digits}</span></div>
+                <div>${combo.prediction}</div>
+            </div>
+        `).join('');
+    }
+
+    function getOriginalPositions(original, sanitized, idx) {
+        let nonZeroCount = 0;
+        let start = -1, end = -1;
+        for (let i = 0; i < original.length; i++) {
+            if (original[i] !== '0') {
+                if (nonZeroCount === idx) start = i + 1;
+                if (nonZeroCount === idx + 1) { end = i + 1; break; }
+                nonZeroCount++;
+            }
+        }
+        return { start, end };
+    }
+
+    function reduceToSingleDigit(num) {
+        while (num > 9) {
+            num = num.toString().split('').reduce((sum, d) => sum + parseInt(d), 0);
+        }
+        return num;
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+    }
+
+    function clearError() {
+        document.getElementById('errorMessage').textContent = '';
+    }
+    </script>
+</body>
+</html>
